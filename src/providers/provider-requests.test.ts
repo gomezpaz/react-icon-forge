@@ -59,13 +59,15 @@ describe("provider request builders", () => {
   });
 
   it("rejects provider-controlled private download URLs", () => {
-    expect(() => trustedHttpsUrl("https://127.0.0.1/file.svg", "provider")).toThrow(
-      "private URL",
-    );
-    expect(() => trustedHttpsUrl("https://cdn.example.com/file.svg", "provider")).not.toThrow();
-    expect(() => trustedHttpsUrl("https://localhost./file.svg", "provider")).toThrow(
-      "private URL",
-    );
+    expect(() =>
+      trustedHttpsUrl("https://127.0.0.1/file.svg", "provider"),
+    ).toThrow("private URL");
+    expect(() =>
+      trustedHttpsUrl("https://cdn.example.com/file.svg", "provider"),
+    ).not.toThrow();
+    expect(() =>
+      trustedHttpsUrl("https://localhost./file.svg", "provider"),
+    ).toThrow("private URL");
     expect(() =>
       trustedHttpsUrl("https://[::ffff:127.0.0.1]/file.svg", "provider"),
     ).toThrow("private URL");
@@ -82,10 +84,15 @@ describe("provider request builders", () => {
     controller.abort();
     const fetchImpl = vi.fn<typeof fetch>();
     await expect(
-      fetchWithDeadline(fetchImpl, "https://example.com", {}, {
-        timeoutMs: 100,
-        signal: controller.signal,
-      }),
+      fetchWithDeadline(
+        fetchImpl,
+        "https://example.com",
+        {},
+        {
+          timeoutMs: 100,
+          signal: controller.signal,
+        },
+      ),
     ).rejects.toThrow("cancelled");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -94,7 +101,9 @@ describe("provider request builders", () => {
     const response = new Response('{"ok":true}', {
       headers: { "content-length": "11" },
     });
-    await expect(readJson(response, "fixture", 5)).rejects.toThrow("byte limit");
+    await expect(readJson(response, "fixture", 5)).rejects.toThrow(
+      "byte limit",
+    );
   });
 
   it("stops an oversized binary stream without relying on Content-Length", async () => {
@@ -108,38 +117,67 @@ describe("provider request builders", () => {
       }),
     );
     expect(response.headers.has("content-length")).toBe(false);
-    await expect(readBytesWithinLimit(response, "fixture image", 5)).rejects.toThrow(
-      "byte limit",
+    await expect(
+      readBytesWithinLimit(response, "fixture image", 5),
+    ).rejects.toThrow("byte limit");
+  });
+
+  it("does not preallocate an untrusted large Content-Length", async () => {
+    const response = new Response(new Uint8Array([1, 2, 3]), {
+      headers: { "content-length": "20000000" },
+    });
+
+    const bytes = await readBytesWithinLimit(
+      response,
+      "fixture image",
+      20_000_000,
     );
+
+    expect([...bytes]).toEqual([1, 2, 3]);
+    expect(bytes.buffer.byteLength).toBeLessThanOrEqual(64 * 1024);
   });
 
   it("keeps the deadline active when headers arrive but the body stalls", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
-      new Response(
-        new ReadableStream({
-          pull: () => new Promise<void>(() => undefined),
-        }),
-      ),
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          new ReadableStream({
+            pull: () => new Promise<void>(() => undefined),
+          }),
+        ),
     );
-    const response = await fetchWithDeadline(fetchImpl, "https://example.com", {}, {
-      timeoutMs: 10,
-    });
-    await expect(readJson(response, "stalled fixture")).rejects.toThrow("timed out");
+    const response = await fetchWithDeadline(
+      fetchImpl,
+      "https://example.com",
+      {},
+      {
+        timeoutMs: 10,
+      },
+    );
+    await expect(readJson(response, "stalled fixture")).rejects.toThrow(
+      "timed out",
+    );
   });
 
   it("keeps caller cancellation active while a response body stalls", async () => {
     const controller = new AbortController();
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
-      new Response(
-        new ReadableStream({
-          pull: () => new Promise<void>(() => undefined),
-        }),
-      ),
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          new ReadableStream({
+            pull: () => new Promise<void>(() => undefined),
+          }),
+        ),
     );
-    const response = await fetchWithDeadline(fetchImpl, "https://example.com", {}, {
-      timeoutMs: 1_000,
-      signal: controller.signal,
-    });
+    const response = await fetchWithDeadline(
+      fetchImpl,
+      "https://example.com",
+      {},
+      {
+        timeoutMs: 1_000,
+        signal: controller.signal,
+      },
+    );
     const body = readBytesWithinLimit(response, "stalled fixture", 10);
     controller.abort();
     await expect(body).rejects.toThrow("cancelled");

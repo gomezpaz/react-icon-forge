@@ -170,7 +170,7 @@ export async function readBytesWithinLimit(
   const reader = response.body.getReader();
   const initialCapacity =
     Number.isFinite(declaredLength) && declaredLength > 0
-      ? declaredLength
+      ? Math.min(declaredLength, maxBytes, 64 * 1024)
       : Math.min(maxBytes, 64 * 1024);
   let bytes = new Uint8Array(initialCapacity);
   let total = 0;

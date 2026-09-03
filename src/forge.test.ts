@@ -124,4 +124,33 @@ describe("createIconForge", () => {
       outputTokens: 14,
     });
   });
+
+  it("merges component-only cost reports from custom adapters", async () => {
+    const { provider, vectorizer } = fixtures();
+    vi.mocked(provider.generate).mockResolvedValueOnce({
+      asset: { bytes: raster, mimeType: "image/png" },
+      provider: "fixture",
+      model: "fixture/image-v1",
+      usage: { costs: { generationUsd: 0.04 } },
+    });
+    vi.mocked(vectorizer.vectorize).mockResolvedValueOnce({
+      asset: { bytes: svg, mimeType: "image/svg+xml" },
+      provider: "fixture",
+      model: "fixture/vector-v1",
+      usage: { costs: { vectorizationUsd: 0.005 } },
+    });
+    const forge = createIconForge({
+      providers: [provider],
+      defaultProvider: "fixture",
+      vectorizer,
+    });
+
+    const result = await forge.generate({ description: "A compass" });
+
+    expect(result.usage?.costUsd).toBeCloseTo(0.045);
+    expect(result.usage?.costs).toEqual({
+      generationUsd: 0.04,
+      vectorizationUsd: 0.005,
+    });
+  });
 });

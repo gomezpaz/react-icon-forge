@@ -105,15 +105,18 @@ function mergeUsage(
   usedVectorizer: boolean,
 ): IconProviderUsage | undefined {
   const costs = {
-    generationUsd: provider?.costUsd,
-    vectorizationUsd: usedVectorizer ? vectorizer?.costUsd : undefined,
+    generationUsd: provider?.costs?.generationUsd ?? provider?.costUsd,
+    vectorizationUsd: usedVectorizer
+      ? (vectorizer?.costs?.vectorizationUsd ?? vectorizer?.costUsd)
+      : undefined,
   };
   const usage: IconProviderUsage = {
     costUsd: usedVectorizer
-      ? provider?.costUsd !== undefined && vectorizer?.costUsd !== undefined
-        ? provider.costUsd + vectorizer.costUsd
+      ? costs.generationUsd !== undefined &&
+        costs.vectorizationUsd !== undefined
+        ? costs.generationUsd + costs.vectorizationUsd
         : undefined
-      : provider?.costUsd,
+      : costs.generationUsd,
     costs: Object.values(costs).some((value) => value !== undefined)
       ? costs
       : undefined,
