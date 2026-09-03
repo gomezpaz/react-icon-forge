@@ -51,24 +51,24 @@ describe("createIconForge", () => {
     expect(vectorizer.vectorize).toHaveBeenCalledOnce();
   });
 
-  it("keeps editing disabled unless explicitly enabled", () => {
+  it("keeps editing disabled unless explicitly enabled", async () => {
     const { provider, vectorizer } = fixtures();
     const forge = createIconForge({
       providers: [provider],
       defaultProvider: "fixture",
       vectorizer,
     });
-    expect(() =>
+    await expect(
       forge.edit({
         description: "A compass",
         source: { url: "https://example.com/source.png" },
         suggestion: "Point north",
         editsUsed: 0,
       }),
-    ).toThrowError(IconForgeError);
+    ).rejects.toBeInstanceOf(IconForgeError);
   });
 
-  it("enforces the immutable three-edit ceiling", () => {
+  it("enforces the immutable three-edit ceiling", async () => {
     const { provider, vectorizer } = fixtures();
     const forge = createIconForge({
       providers: [provider],
@@ -76,13 +76,40 @@ describe("createIconForge", () => {
       vectorizer,
       editsEnabled: true,
     });
-    expect(() =>
+    await expect(
       forge.edit({
         description: "A compass",
         source: { url: "https://example.com/source.png" },
         suggestion: "Point north",
         editsUsed: MAX_ICON_EDITS,
       }),
-    ).toThrow("used all 3 edit slots");
+    ).rejects.toThrow("used all 3 edit slots");
+  });
+
+  it("merges vectorizer token usage without treating unknown provider cost as free", async () => {
+    const { provider, vectorizer } = fixtures();
+    vi.mocked(provider.generate).mockResolvedValueOnce({
+      asset: { bytes: raster, mimeType: "image/png" },
+      provider: "fixture",
+      model: "fixture/image-v1",
+      usage: { inputTokens: 7, outputTokens: 11 },
+    });
+    vi.mocked(vectorizer.vectorize).mockResolvedValueOnce({
+      asset: { bytes: svg, mimeType: "image/svg+xml; charset=utf-8" },
+      provider: "fixture",
+      model: "fixture/vector-v1",
+      usage: { costUsd: 0.005, inputTokens: 2, outputTokens: 3 },
+    });
+    const forge = createIconForge({
+      providers: [provider],
+      defaultProvider: "fixture",
+      vectorizer,
+    });
+    const result = await forge.generate({ description: "A compass" });
+    expect(result.usage).toEqual({
+      costUsd: undefined,
+      inputTokens: 9,
+      outputTokens: 14,
+    });
   });
 });

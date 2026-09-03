@@ -6,7 +6,7 @@ import type {
   IconProviderResult,
   IconQuality,
 } from "../types.js";
-import { assertModelId, fetchWithDeadline, readJson } from "./http.js";
+import { assertOpenRouterModelId, fetchWithDeadline, readJson } from "./http.js";
 
 const OPENROUTER_IMAGES_URL = "https://openrouter.ai/api/v1/images";
 
@@ -61,13 +61,13 @@ export function createOpenRouterProvider(
   if (!apiKey) {
     throw new IconForgeError("INVALID_INPUT", "OpenRouter API key is required.");
   }
-  const defaultModel = assertModelId(options.defaultModel, "OpenRouter");
+  const defaultModel = assertOpenRouterModelId(options.defaultModel);
   const fetchImpl = options.fetch ?? fetch;
   return {
     id: "openrouter",
     defaultModel,
     async generate(request: IconProviderRequest): Promise<IconProviderResult> {
-      const model = assertModelId(request.model ?? defaultModel, "OpenRouter");
+      const model = assertOpenRouterModelId(request.model ?? defaultModel);
       const response = await fetchWithDeadline(
         fetchImpl,
         OPENROUTER_IMAGES_URL,
@@ -93,6 +93,7 @@ export function createOpenRouterProvider(
       const payload = await readJson<OpenRouterImageResponse>(
         response,
         "OpenRouter image generation",
+        30_000_000,
       );
       const image = payload.data?.[0];
       if (!image?.b64_json) {

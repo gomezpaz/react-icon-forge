@@ -3,6 +3,7 @@ export const MAX_ICON_REFERENCES = 4 as const;
 export const MAX_ICON_DESCRIPTION_CHARS = 2_000 as const;
 export const MAX_ICON_CONTEXT_CHARS = 6_000 as const;
 export const MAX_ICON_SUGGESTION_CHARS = 1_000 as const;
+export const MAX_ICON_STYLE_CHARS = 2_000 as const;
 
 export type IconStyleKey =
   | "isometric"

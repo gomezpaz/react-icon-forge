@@ -44,7 +44,8 @@
     "./providers/openrouter": {
       "types": "./dist/providers/openrouter.d.ts",
       "import": "./dist/providers/openrouter.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "engines": {
     "node": ">=20"

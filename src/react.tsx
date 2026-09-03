@@ -1,6 +1,7 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type HTMLAttributes,
@@ -70,20 +71,24 @@ export function useIconForgeClient(options: UseIconForgeClientOptions) {
   const [result, setResult] = useState<IconClientGeneration | null>(null);
   const [busy, setBusy] = useState<"generate" | "edit" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const latestRequest = useRef(0);
 
   const generate = useCallback(
     async (input: IconClientGenerateInput) => {
+      const requestId = ++latestRequest.current;
       setBusy("generate");
       setError(null);
       try {
         const next = await generateTransport(input);
-        setResult(next);
+        if (latestRequest.current === requestId) setResult(next);
         return next;
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Icon generation failed.");
+        if (latestRequest.current === requestId) {
+          setError(caught instanceof Error ? caught.message : "Icon generation failed.");
+        }
         throw caught;
       } finally {
-        setBusy(null);
+        if (latestRequest.current === requestId) setBusy(null);
       }
     },
     [generateTransport],
@@ -100,17 +105,20 @@ export function useIconForgeClient(options: UseIconForgeClientOptions) {
           `This icon has used all ${MAX_ICON_EDITS} edit slots.`,
         );
       }
+      const requestId = ++latestRequest.current;
       setBusy("edit");
       setError(null);
       try {
         const next = await editTransport(input);
-        setResult(next);
+        if (latestRequest.current === requestId) setResult(next);
         return next;
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Icon editing failed.");
+        if (latestRequest.current === requestId) {
+          setError(caught instanceof Error ? caught.message : "Icon editing failed.");
+        }
         throw caught;
       } finally {
-        setBusy(null);
+        if (latestRequest.current === requestId) setBusy(null);
       }
     },
     [editTransport, editsEnabled, result],

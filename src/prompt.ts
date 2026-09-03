@@ -39,7 +39,12 @@ function boundedText(value: string | undefined, max: number, label: string): str
 
 function validateReference(reference: IconImageReference): IconImageReference {
   const url = reference.url.trim();
-  const isHttps = /^https:\/\//i.test(url);
+  let isHttps = false;
+  try {
+    isHttps = new URL(url).protocol === "https:";
+  } catch {
+    isHttps = false;
+  }
   const isImageData = /^data:image\/(?:png|jpe?g|webp|gif|avif|svg\+xml);base64,/i.test(
     url,
   );

@@ -11,6 +11,7 @@ import {
   type IconForgeResult,
   type IconImageProvider,
   type IconProviderResult,
+  type IconProviderUsage,
 } from "./types.js";
 
 function fallbackId(): string {
@@ -43,10 +44,13 @@ async function toSvg(
   raster?: IconBinaryAsset;
   vectorizer?: string;
   vectorizerRequestId?: string;
-  vectorizerCostUsd?: number;
+  vectorizerUsage?: IconProviderUsage;
+  usedVectorizer: boolean;
 }> {
-  if (generated.asset.mimeType.toLowerCase() === "image/svg+xml") {
-    return { svg: svgAssetToText(generated.asset) };
+  if (
+    generated.asset.mimeType.split(";", 1)[0]?.trim().toLowerCase() === "image/svg+xml"
+  ) {
+    return { svg: svgAssetToText(generated.asset), usedVectorizer: false };
   }
   if (!options.vectorizer) {
     throw new IconForgeError(
@@ -62,7 +66,8 @@ async function toSvg(
       raster: generated.asset,
       vectorizer: `${vectorized.provider}/${vectorized.model}`,
       vectorizerRequestId: vectorized.requestId,
-      vectorizerCostUsd: vectorized.usage?.costUsd,
+      vectorizerUsage: vectorized.usage,
+      usedVectorizer: true,
     };
   } catch (error) {
     if (error instanceof IconForgeError && error.code === "UNSAFE_SVG") {
@@ -76,6 +81,27 @@ async function toSvg(
       { partialRaster: generated.asset },
     );
   }
+}
+
+function sumKnown(left: number | undefined, right: number | undefined): number | undefined {
+  return left === undefined && right === undefined ? undefined : (left ?? 0) + (right ?? 0);
+}
+
+function mergeUsage(
+  provider: IconProviderUsage | undefined,
+  vectorizer: IconProviderUsage | undefined,
+  usedVectorizer: boolean,
+): IconProviderUsage | undefined {
+  const usage: IconProviderUsage = {
+    costUsd: usedVectorizer
+      ? provider?.costUsd !== undefined && vectorizer?.costUsd !== undefined
+        ? provider.costUsd + vectorizer.costUsd
+        : undefined
+      : provider?.costUsd,
+    inputTokens: sumKnown(provider?.inputTokens, vectorizer?.inputTokens),
+    outputTokens: sumKnown(provider?.outputTokens, vectorizer?.outputTokens),
+  };
+  return Object.values(usage).some((value) => value !== undefined) ? usage : undefined;
 }
 
 export function createIconForge(options: IconForgeOptions): IconForge {
@@ -137,14 +163,7 @@ export function createIconForge(options: IconForgeOptions): IconForge {
       prompt: compiled,
       editsUsed,
       durationMs: Math.max(0, now() - startedAt),
-      usage:
-        generated.usage || vector.vectorizerCostUsd !== undefined
-          ? {
-              ...generated.usage,
-              costUsd:
-                (generated.usage?.costUsd ?? 0) + (vector.vectorizerCostUsd ?? 0),
-            }
-          : undefined,
+      usage: mergeUsage(generated.usage, vector.vectorizerUsage, vector.usedVectorizer),
     };
   }
 
@@ -152,7 +171,7 @@ export function createIconForge(options: IconForgeOptions): IconForge {
     generate(input) {
       return run(input, "generate", 0);
     },
-    edit(input) {
+    async edit(input) {
       if (!options.editsEnabled) {
         throw new IconForgeError(
           "EDITING_DISABLED",
