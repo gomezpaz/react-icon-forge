@@ -1,0 +1,76 @@
+{
+  "name": "react-icon-forge",
+  "version": "0.1.0",
+  "description": "Generate, refine, vectorize, and review custom icons from React and Node with BYOK image providers.",
+  "author": {
+    "name": "Santiago Gomez Paz",
+    "url": "https://github.com/gomezpaz"
+  },
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gomezpaz/react-icon-forge.git"
+  },
+  "homepage": "https://github.com/gomezpaz/react-icon-forge#readme",
+  "bugs": {
+    "url": "https://github.com/gomezpaz/react-icon-forge/issues"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "import": "./dist/admin.js"
+    },
+    "./providers/fal": {
+      "types": "./dist/providers/fal.d.ts",
+      "import": "./dist/providers/fal.js"
+    },
+    "./providers/openrouter": {
+      "types": "./dist/providers/openrouter.d.ts",
+      "import": "./dist/providers/openrouter.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "check": "npm run build && npm run test",
+    "prepack": "npm run check"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
