@@ -19,6 +19,7 @@
   },
   "files": [
     "dist",
+    "scripts/generate-readme-examples.mjs",
     "README.md",
     "LICENSE"
   ],
@@ -68,6 +69,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "check": "npm run build && npm run test",
+    "examples:generate": "npm run build && node scripts/generate-readme-examples.mjs",
     "prepack": "npm run check"
   },
   "publishConfig": {

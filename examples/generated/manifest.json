@@ -1,0 +1,43 @@
+{
+  "generatedBy": "react-icon-forge@0.1.0",
+  "pipeline": "fal/openai/gpt-image-2 -> fal/fal-ai/image2svg -> sanitizeIconSvg",
+  "generatedAt": "2026-09-05T02:40:00.000Z",
+  "examples": [
+    {
+      "id": "fix-checkout",
+      "caption": "Fix a checkout bug",
+      "description": "A compact shopping bag beside a small wrench, representing a checkout bug being fixed",
+      "contextText": "This is decorative artwork for a task approval card. Use a consistent neutral palette: warm white, charcoal, muted blue, and restrained orange accents. No text, letters, logos, people, or decorative frame.",
+      "style": "isometric",
+      "provider": "fal",
+      "model": "openai/gpt-image-2",
+      "promptProfile": "react-icon-forge.default",
+      "promptVersion": 1,
+      "vectorizer": "fal/fal-ai/image2svg"
+    },
+    {
+      "id": "launch-website",
+      "caption": "Launch a new website",
+      "description": "A compact browser window lifting off from a tiny launch pad, representing a website launch",
+      "contextText": "This is decorative artwork for a task approval card. Use a consistent neutral palette: warm white, charcoal, muted blue, and restrained orange accents. No text, letters, logos, people, or decorative frame.",
+      "style": "isometric",
+      "provider": "fal",
+      "model": "openai/gpt-image-2",
+      "promptProfile": "react-icon-forge.default",
+      "promptVersion": 1,
+      "vectorizer": "fal/fal-ai/image2svg"
+    },
+    {
+      "id": "schedule-campaign",
+      "caption": "Schedule a social campaign",
+      "description": "A compact calendar beside a small megaphone, representing a scheduled social media campaign",
+      "contextText": "This is decorative artwork for a task approval card. Use a consistent neutral palette: warm white, charcoal, muted blue, and restrained orange accents. No text, letters, logos, people, or decorative frame.",
+      "style": "isometric",
+      "provider": "fal",
+      "model": "openai/gpt-image-2",
+      "promptProfile": "react-icon-forge.default",
+      "promptVersion": 1,
+      "vectorizer": "fal/fal-ai/image2svg"
+    }
+  ]
+}
