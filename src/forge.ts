@@ -1,5 +1,9 @@
 import { IconForgeError } from "./errors.js";
-import { compileIconEditPrompt, compileIconPrompt, normalizeIconReferences } from "./prompt.js";
+import {
+  compileIconEditPrompt,
+  compileIconPrompt,
+  normalizeIconReferences,
+} from "./prompt.js";
 import { svgAssetToText } from "./svg.js";
 import {
   MAX_ICON_EDITS,
@@ -11,6 +15,7 @@ import {
   type IconForgeResult,
   type IconImageProvider,
   type IconProviderResult,
+  type IconProviderUsage,
 } from "./types.js";
 
 function fallbackId(): string {
@@ -43,10 +48,14 @@ async function toSvg(
   raster?: IconBinaryAsset;
   vectorizer?: string;
   vectorizerRequestId?: string;
-  vectorizerCostUsd?: number;
+  vectorizerUsage?: IconProviderUsage;
+  usedVectorizer: boolean;
 }> {
-  if (generated.asset.mimeType.toLowerCase() === "image/svg+xml") {
-    return { svg: svgAssetToText(generated.asset) };
+  if (
+    generated.asset.mimeType.split(";", 1)[0]?.trim().toLowerCase() ===
+    "image/svg+xml"
+  ) {
+    return { svg: svgAssetToText(generated.asset), usedVectorizer: false };
   }
   if (!options.vectorizer) {
     throw new IconForgeError(
@@ -56,13 +65,16 @@ async function toSvg(
     );
   }
   try {
-    const vectorized = await options.vectorizer.vectorize(generated.asset, { signal });
+    const vectorized = await options.vectorizer.vectorize(generated.asset, {
+      signal,
+    });
     return {
       svg: svgAssetToText(vectorized.asset),
       raster: generated.asset,
       vectorizer: `${vectorized.provider}/${vectorized.model}`,
       vectorizerRequestId: vectorized.requestId,
-      vectorizerCostUsd: vectorized.usage?.costUsd,
+      vectorizerUsage: vectorized.usage,
+      usedVectorizer: true,
     };
   } catch (error) {
     if (error instanceof IconForgeError && error.code === "UNSAFE_SVG") {
@@ -78,8 +90,48 @@ async function toSvg(
   }
 }
 
+function sumKnown(
+  left: number | undefined,
+  right: number | undefined,
+): number | undefined {
+  return left === undefined && right === undefined
+    ? undefined
+    : (left ?? 0) + (right ?? 0);
+}
+
+function mergeUsage(
+  provider: IconProviderUsage | undefined,
+  vectorizer: IconProviderUsage | undefined,
+  usedVectorizer: boolean,
+): IconProviderUsage | undefined {
+  const costs = {
+    generationUsd: provider?.costs?.generationUsd ?? provider?.costUsd,
+    vectorizationUsd: usedVectorizer
+      ? (vectorizer?.costs?.vectorizationUsd ?? vectorizer?.costUsd)
+      : undefined,
+  };
+  const usage: IconProviderUsage = {
+    costUsd: usedVectorizer
+      ? costs.generationUsd !== undefined &&
+        costs.vectorizationUsd !== undefined
+        ? costs.generationUsd + costs.vectorizationUsd
+        : undefined
+      : costs.generationUsd,
+    costs: Object.values(costs).some((value) => value !== undefined)
+      ? costs
+      : undefined,
+    inputTokens: sumKnown(provider?.inputTokens, vectorizer?.inputTokens),
+    outputTokens: sumKnown(provider?.outputTokens, vectorizer?.outputTokens),
+  };
+  return Object.values(usage).some((value) => value !== undefined)
+    ? usage
+    : undefined;
+}
+
 export function createIconForge(options: IconForgeOptions): IconForge {
-  const providers = new Map(options.providers.map((provider) => [provider.id, provider]));
+  const providers = new Map(
+    options.providers.map((provider) => [provider.id, provider]),
+  );
   if (providers.size !== options.providers.length) {
     throw new IconForgeError("INVALID_INPUT", "Provider ids must be unique.");
   }
@@ -137,14 +189,11 @@ export function createIconForge(options: IconForgeOptions): IconForge {
       prompt: compiled,
       editsUsed,
       durationMs: Math.max(0, now() - startedAt),
-      usage:
-        generated.usage || vector.vectorizerCostUsd !== undefined
-          ? {
-              ...generated.usage,
-              costUsd:
-                (generated.usage?.costUsd ?? 0) + (vector.vectorizerCostUsd ?? 0),
-            }
-          : undefined,
+      usage: mergeUsage(
+        generated.usage,
+        vector.vectorizerUsage,
+        vector.usedVectorizer,
+      ),
     };
   }
 
@@ -152,7 +201,7 @@ export function createIconForge(options: IconForgeOptions): IconForge {
     generate(input) {
       return run(input, "generate", 0);
     },
-    edit(input) {
+    async edit(input) {
       if (!options.editsEnabled) {
         throw new IconForgeError(
           "EDITING_DISABLED",
@@ -160,7 +209,10 @@ export function createIconForge(options: IconForgeOptions): IconForge {
         );
       }
       if (!Number.isInteger(input.editsUsed) || input.editsUsed < 0) {
-        throw new IconForgeError("INVALID_INPUT", "editsUsed must be a non-negative integer.");
+        throw new IconForgeError(
+          "INVALID_INPUT",
+          "editsUsed must be a non-negative integer.",
+        );
       }
       if (input.editsUsed >= MAX_ICON_EDITS) {
         throw new IconForgeError(

@@ -7,6 +7,20 @@ OpenRouter adapters use `fetch` directly.
 
 Created and maintained by [Santiago Gomez Paz](https://github.com/gomezpaz).
 
+## Generated examples
+
+These SVGs were generated with the package's default pipeline: GPT Image 2 on
+fal, followed by `fal-ai/image2svg` and the built-in SVG sanitizer.
+
+| Fix checkout | Launch a website | Schedule a campaign |
+| --- | --- | --- |
+| <img src="./examples/generated/fix-checkout.svg" width="180" alt="Isometric shopping bag and wrench icon" /> | <img src="./examples/generated/launch-website.svg" width="180" alt="Isometric website launch icon" /> | <img src="./examples/generated/schedule-campaign.svg" width="180" alt="Isometric campaign calendar icon" /> |
+| `Fix a checkout bug` | `Launch a new website` | `Schedule a social campaign` |
+
+Reproduce them with `FAL_KEY=… npm run examples:generate`. The exact briefs
+and generation metadata are checked in at
+[`examples/generated/manifest.json`](./examples/generated/manifest.json).
+
 ## What ships
 
 - Text plus up to four private image references
@@ -133,10 +147,12 @@ const edited = await forge.edit({
 ## Prompt hardening
 
 Every result returns the exact compiled prompt, profile id, profile version,
-provider, model, request id, duration, and reported usage. Store those beside a
-pass/fail review and replay the same input against a draft prompt profile. The
-optional `react-icon-forge/admin` entry exports an unstyled contact sheet and a
-controlled prompt-profile editor for this loop.
+provider, model, request id, duration, and reported usage. `usage.costUsd` is
+only set when the complete total is known; `usage.costs` preserves separately
+reported generation and vectorization charges when one component is unknown.
+Store those beside a pass/fail review and replay the same input against a draft
+prompt profile. The optional `react-icon-forge/admin` entry exports an unstyled
+contact sheet and a controlled prompt-profile editor for this loop.
 
 ## Security and privacy
 

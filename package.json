@@ -19,6 +19,7 @@
   },
   "files": [
     "dist",
+    "scripts/generate-readme-examples.mjs",
     "README.md",
     "LICENSE"
   ],
@@ -44,7 +45,8 @@
     "./providers/openrouter": {
       "types": "./dist/providers/openrouter.d.ts",
       "import": "./dist/providers/openrouter.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "engines": {
     "node": ">=20"
@@ -67,6 +69,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "check": "npm run build && npm run test",
+    "examples:generate": "npm run build && node scripts/generate-readme-examples.mjs",
     "prepack": "npm run check"
   },
   "publishConfig": {

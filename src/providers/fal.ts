@@ -11,6 +11,7 @@ import type {
 import {
   assertModelId,
   fetchWithDeadline,
+  readBytesWithinLimit,
   readJson,
   trustedHttpsUrl,
 } from "./http.js";
@@ -89,12 +90,13 @@ async function cancelFalRequest(
   apiKey: string,
 ): Promise<void> {
   if (!cancelUrl) return;
-  await fetchWithDeadline(
+  const response = await fetchWithDeadline(
     fetchImpl,
     cancelUrl,
-    { method: "PUT", headers: falHeaders(apiKey) },
+    { method: "PUT", headers: falHeaders(apiKey), redirect: "manual" },
     { timeoutMs: 10_000 },
   ).catch(() => undefined);
+  await response?.body?.cancel().catch(() => undefined);
 }
 
 async function runFalQueue(args: {
@@ -112,6 +114,7 @@ async function runFalQueue(args: {
     `${FAL_QUEUE_ORIGIN}/${model}`,
     {
       method: "POST",
+      redirect: "manual",
       headers: { ...falHeaders(args.apiKey), "Content-Type": "application/json" },
       body: JSON.stringify(args.body),
     },
@@ -140,7 +143,7 @@ async function runFalQueue(args: {
       const statusResponse = await fetchWithDeadline(
         args.fetchImpl,
         pollUrl,
-        { headers: falHeaders(args.apiKey) },
+        { headers: falHeaders(args.apiKey), redirect: "manual" },
         {
           timeoutMs: Math.min(FETCH_TIMEOUT_MS, Math.max(1, deadline - Date.now())),
           signal: args.signal,
@@ -163,7 +166,7 @@ async function runFalQueue(args: {
         const resultResponse = await fetchWithDeadline(
           args.fetchImpl,
           responseUrl,
-          { headers: falHeaders(args.apiKey) },
+          { headers: falHeaders(args.apiKey), redirect: "manual" },
           { timeoutMs: FETCH_TIMEOUT_MS, signal: args.signal },
         );
         return {
@@ -211,7 +214,7 @@ async function downloadFalAsset(
   const response = await fetchWithDeadline(
     fetchImpl,
     url,
-    {},
+    { redirect: "manual" },
     { timeoutMs: FETCH_TIMEOUT_MS, signal },
   );
   if (!response.ok) {
@@ -220,21 +223,18 @@ async function downloadFalAsset(
       `fal image download failed (${response.status}).`,
     );
   }
-  const declaredLength = Number(response.headers.get("content-length") ?? "0");
-  if (declaredLength > MAX_PROVIDER_IMAGE_BYTES) {
-    throw new IconForgeError("PROVIDER_ERROR", "fal image exceeded the byte limit.");
-  }
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > MAX_PROVIDER_IMAGE_BYTES) {
-    throw new IconForgeError("PROVIDER_ERROR", "fal image exceeded the byte limit.");
-  }
+  const bytes = await readBytesWithinLimit(
+    response,
+    "fal image",
+    MAX_PROVIDER_IMAGE_BYTES,
+  );
   return {
     bytes,
     mimeType:
       value.content_type ?? response.headers.get("content-type") ?? "image/png",
     width: value.width,
     height: value.height,
-    sourceUrl: value.url,
+    sourceUrl: url.href,
   };
 }
 

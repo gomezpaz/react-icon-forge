@@ -1,4 +1,5 @@
 import { IconForgeError } from "./errors.js";
+import { MAX_ICON_STYLE_CHARS } from "./types.js";
 import type {
   IconStyleInput,
   IconStyleKey,
@@ -45,27 +46,29 @@ export const ICON_STYLE_PRESETS: Readonly<Record<IconStyleKey, IconStylePreset>>
 };
 
 export function resolveIconStyle(input?: IconStyleInput): IconStylePreset {
-  if (!input) return ICON_STYLE_PRESETS.minimal;
+  if (input === undefined) return ICON_STYLE_PRESETS.minimal;
   if (typeof input === "string") {
-    const preset = ICON_STYLE_PRESETS[input as IconStyleKey];
-    if (!preset) {
+    if (!Object.prototype.hasOwnProperty.call(ICON_STYLE_PRESETS, input)) {
       throw new IconForgeError(
         "INVALID_INPUT",
         `Unknown icon style "${input}". Pass a custom style object instead.`,
       );
     }
-    return preset;
+    return ICON_STYLE_PRESETS[input as IconStyleKey];
+  }
+  if (!input || typeof input.instructions !== "string") {
+    throw new IconForgeError("INVALID_INPUT", "Custom style instructions are required.");
   }
   const instructions = input.instructions.trim();
-  if (!instructions || Array.from(instructions).length > 1_500) {
+  if (!instructions || Array.from(instructions).length > MAX_ICON_STYLE_CHARS) {
     throw new IconForgeError(
       "INVALID_INPUT",
-      "Custom style instructions must contain 1 to 1,500 characters.",
+      `Custom style instructions must contain 1 to ${MAX_ICON_STYLE_CHARS.toLocaleString()} characters.`,
     );
   }
   return {
     key: input.key,
-    label: input.label?.trim() || "Custom",
+    label: typeof input.label === "string" && input.label.trim() ? input.label.trim() : "Custom",
     instructions,
   };
 }

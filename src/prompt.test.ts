@@ -32,6 +32,30 @@ describe("icon prompt compiler", () => {
         Array.from({ length: 5 }, () => ({ url: "https://example.com/icon.png" })),
       ),
     ).toThrow("at most 4");
+    expect(() => normalizeIconReferences([{ url: "https://" }])).toThrow(
+      IconForgeError,
+    );
+  });
+
+  it("rejects empty and inherited style keys while allowing 2,000 custom characters", () => {
+    expect(() => compileIconPrompt({ description: "A compass", style: "" as never })).toThrow(
+      'Unknown icon style ""',
+    );
+    expect(() =>
+      compileIconPrompt({ description: "A compass", style: "__proto__" as never }),
+    ).toThrow('Unknown icon style "__proto__"');
+    expect(() =>
+      compileIconPrompt({
+        description: "A compass",
+        style: { key: "custom", instructions: "x".repeat(2_000) },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      compileIconPrompt({
+        description: "A compass",
+        style: { key: "custom", instructions: "x".repeat(2_001) },
+      }),
+    ).toThrow("2,000");
   });
 
   it("makes edit intent explicit without discarding the source", () => {
