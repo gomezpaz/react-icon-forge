@@ -2,6 +2,7 @@
   "generatedBy": "react-icon-forge@0.1.0",
   "pipeline": "fal/openai/gpt-image-2 -> fal/fal-ai/image2svg -> sanitizeIconSvg",
   "generatedAt": "2026-09-05T02:40:00.000Z",
+  "postprocessing": "Removed only the first, full-canvas background path from each sanitized SVG; retained all foreground vector paths. No embedded raster images.",
   "examples": [
     {
       "id": "fix-checkout",

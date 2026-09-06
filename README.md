@@ -10,14 +10,22 @@ Created and maintained by [Santiago Gomez Paz](https://github.com/gomezpaz).
 ## Generated examples
 
 These SVGs were generated with the package's default pipeline: GPT Image 2 on
-fal, followed by `fal-ai/image2svg` and the built-in SVG sanitizer.
+fal, followed by `fal-ai/image2svg` and the built-in SVG sanitizer. They are
+actual vector paths, not PNGs embedded inside SVGs. The flat, full-canvas
+background path was removed from each example so they display transparently.
 
 | Fix checkout | Launch a website | Schedule a campaign |
 | --- | --- | --- |
 | <img src="./examples/generated/fix-checkout.svg" width="180" alt="Isometric shopping bag and wrench icon" /> | <img src="./examples/generated/launch-website.svg" width="180" alt="Isometric website launch icon" /> | <img src="./examples/generated/schedule-campaign.svg" width="180" alt="Isometric campaign calendar icon" /> |
 | `Fix a checkout bug` | `Launch a new website` | `Schedule a social campaign` |
 
-Reproduce them with `FAL_KEY=… npm run examples:generate`. The exact briefs
+Download: [checkout SVG](./examples/generated/fix-checkout.svg) ·
+[website SVG](./examples/generated/launch-website.svg) ·
+[campaign SVG](./examples/generated/schedule-campaign.svg).
+
+Generate fresh examples with `FAL_KEY=… npm run examples:generate`. Generation
+is nondeterministic and may produce a background; the checked-in examples have
+the background-only path removed as a separate presentation step. The briefs
 and generation metadata are checked in at
 [`examples/generated/manifest.json`](./examples/generated/manifest.json).
 
